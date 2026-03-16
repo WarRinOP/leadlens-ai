@@ -28,9 +28,10 @@ interface AnalyzerFormProps {
   onResult: (result: AnalysisResult) => void;
   onError?: (message: string) => void;
   onLoading?: () => void;
+  onRemaining?: (count: number) => void;
 }
 
-export function AnalyzerForm({ onResult, onError, onLoading }: AnalyzerFormProps) {
+export function AnalyzerForm({ onResult, onError, onLoading, onRemaining }: AnalyzerFormProps) {
   const { toast } = useToast();
 
   const [businessType, setBusinessType] = useState("Marketing Agency");
@@ -118,8 +119,11 @@ export function AnalyzerForm({ onResult, onError, onLoading }: AnalyzerFormProps
 
       onResult(result);
 
-      // Show remaining count
+      // Propagate remaining count to parent for live badge update
       const remaining = data.remaining as number;
+      onRemaining?.(remaining);
+
+      // Show remaining count toast
       if (remaining === 0) {
         toast("Analysis complete — that was your last free analysis", "info");
       } else if (remaining === 1) {

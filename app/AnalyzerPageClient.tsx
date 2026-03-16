@@ -94,6 +94,7 @@ type PageState =
 
 export default function AnalyzerPageClient() {
   const [pageState, setPageState] = useState<PageState>({ status: "idle" });
+  const [remaining, setRemaining] = useState<number>(5);
 
   function handleResult(result: AnalysisResult) {
     setPageState({ status: "success", result });
@@ -105,6 +106,10 @@ export default function AnalyzerPageClient() {
 
   function handleLoading() {
     setPageState({ status: "loading" });
+  }
+
+  function handleRemaining(count: number) {
+    setRemaining(count);
   }
 
   function reset() {
@@ -123,6 +128,15 @@ export default function AnalyzerPageClient() {
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/20 text-[#22c55e] text-[11px] font-semibold uppercase tracking-wider">
             5 Free Analyses
           </span>
+          {remaining === 0 ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f59e0b]/10 border border-[#f59e0b]/20 text-[#f59e0b] text-[11px] font-semibold uppercase tracking-wider">
+              Limit Reached — Contact for More
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#475569]/10 border border-[#475569]/30 text-[#94a3b8] text-[11px] font-semibold uppercase tracking-wider">
+              {remaining} {remaining === 1 ? "Analysis" : "Analyses"} Left
+            </span>
+          )}
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#e2e8f0] tracking-tight">
           Lead Analyzer
@@ -145,6 +159,7 @@ export default function AnalyzerPageClient() {
               onResult={handleResult}
               onError={handleError}
               onLoading={handleLoading}
+              onRemaining={handleRemaining}
             />
           </Card>
 
