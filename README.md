@@ -35,7 +35,7 @@ LeadLens is a production-grade AI sales intelligence dashboard that analyzes inb
 |---|---|---|
 | **Next.js** | 16.1.6 (App Router + Turbopack) | Full-stack React framework |
 | **Supabase** | Latest | PostgreSQL database + client SDK |
-| **Claude (Haiku 3.5)** | claude-3-5-haiku-latest | Lead analysis AI |
+| **Claude (Haiku 4.5)** | claude-haiku-4-5-20251001 | Lead analysis AI |
 | **Tailwind CSS** | v4 (CSS-first config) | Styling and design system |
 | **TypeScript** | 5.x | Type safety throughout |
 | **Vercel** | — | Hosting and deployment |
