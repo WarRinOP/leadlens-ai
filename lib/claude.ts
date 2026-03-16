@@ -70,6 +70,8 @@ ${emailContent}`;
     throw new Error("Unexpected response type from Claude");
   }
 
-  const parsed = JSON.parse(content.text) as AnalysisResult;
+  // Strip markdown code fences if Claude wraps the JSON (e.g. ```json ... ```)
+  const raw = content.text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+  const parsed = JSON.parse(raw) as AnalysisResult;
   return parsed;
 }
