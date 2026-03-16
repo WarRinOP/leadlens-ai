@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
   const tier = searchParams.get("tier");
   const search = searchParams.get("search");
   const period = searchParams.get("period");
+  const sessionId = searchParams.get("sessionId");
 
   const supabase = createServerSupabaseClient();
 
@@ -36,6 +37,11 @@ export async function GET(req: NextRequest) {
     .from("ll_leads")
     .select("*")
     .order("created_at", { ascending: false });
+
+  // Session filter
+  if (sessionId?.trim()) {
+    query = query.eq("session_id", sessionId.trim());
+  }
 
   if (tier && ["Hot", "Warm", "Cold"].includes(tier)) {
     query = query.eq("tier", tier);

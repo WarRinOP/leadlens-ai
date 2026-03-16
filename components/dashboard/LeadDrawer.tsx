@@ -7,6 +7,7 @@ import { SignalChips } from "@/components/analyzer/SignalChips";
 import { ReplyBox } from "@/components/analyzer/ReplyBox";
 import { NextSteps } from "@/components/analyzer/NextSteps";
 import { useToast } from "@/components/ui/Toast";
+import { getSessionId } from "@/lib/session";
 
 export interface Lead {
   id: string;
@@ -71,7 +72,7 @@ export function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps) {
       const res = await fetch("/api/leads", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: lead.id }),
+        body: JSON.stringify({ id: lead.id, sessionId: getSessionId() }),
       });
       if (!res.ok) throw new Error("Delete failed");
       onDelete(lead.id);

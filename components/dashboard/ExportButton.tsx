@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/components/ui/Toast";
+import { getSessionId } from "@/lib/session";
 import type { FilterState } from "./FilterBar";
 
 interface ExportButtonProps {
@@ -16,11 +17,12 @@ export function ExportButton({ filters }: ExportButtonProps) {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      params.set("sessionId", getSessionId());
       if (filters.tier !== "All") params.set("tier", filters.tier);
       if (filters.period !== "all") params.set("period", filters.period);
       if (filters.search.trim()) params.set("search", filters.search.trim());
 
-      const url = `/api/export${params.toString() ? `?${params}` : ""}`;
+      const url = `/api/export?${params}`;
       const res = await fetch(url);
 
       if (!res.ok) {

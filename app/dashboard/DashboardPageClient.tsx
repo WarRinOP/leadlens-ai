@@ -6,6 +6,7 @@ import { FilterBar, type FilterState } from "@/components/dashboard/FilterBar";
 import { LeadTable } from "@/components/dashboard/LeadTable";
 import { LeadDrawer, type Lead } from "@/components/dashboard/LeadDrawer";
 import { ExportButton } from "@/components/dashboard/ExportButton";
+import { getSessionId } from "@/lib/session";
 
 export default function DashboardPageClient() {
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
@@ -23,10 +24,11 @@ export default function DashboardPageClient() {
     setFetchError(false);
     try {
       const params = new URLSearchParams();
+      params.set("sessionId", getSessionId());
       if (f.tier !== "All") params.set("tier", f.tier);
       if (f.period !== "all") params.set("period", f.period);
       if (f.search.trim()) params.set("search", f.search.trim());
-      const url = `/api/leads${params.toString() ? `?${params}` : ""}`;
+      const url = `/api/leads?${params}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Fetch failed");
       const { leads } = await res.json();

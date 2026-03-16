@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
   const tier = searchParams.get("tier");
   const search = searchParams.get("search");
   const period = searchParams.get("period");
+  const sessionId = searchParams.get("sessionId");
 
   const supabase = createServerSupabaseClient();
 
@@ -39,6 +40,11 @@ export async function GET(req: NextRequest) {
     .from("ll_leads")
     .select("*")
     .order("created_at", { ascending: false });
+
+  // Session filter — only show this session's leads
+  if (sessionId?.trim()) {
+    query = query.eq("session_id", sessionId.trim());
+  }
 
   // Tier filter
   if (tier && ["Hot", "Warm", "Cold"].includes(tier)) {
@@ -76,7 +82,7 @@ export async function GET(req: NextRequest) {
 // Body: { id: string }
 
 export async function DELETE(req: NextRequest) {
-  let body: { id?: string };
+  let body: { id?: string; sessionId?: string };
   try {
     body = await req.json();
   } catch {
@@ -96,7 +102,8 @@ export async function DELETE(req: NextRequest) {
   const { error } = await supabase
     .from("ll_leads")
     .delete()
-    .eq("id", id.trim());
+    .eq("id", id.trim())
+    .eq("session_id", body.sessionId?.trim() ?? "");
 
   if (error) {
     console.error("[leads DELETE] Supabase error:", error);

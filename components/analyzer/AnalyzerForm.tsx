@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { getSessionId } from "@/lib/session";
 import type { AnalysisResult } from "./ResultsPanel";
 
 const BUSINESS_TYPES = [
@@ -93,7 +94,7 @@ export function AnalyzerForm({ onResult, onError, onLoading }: AnalyzerFormProps
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessType, brandName, emailContent }),
+        body: JSON.stringify({ businessType, brandName, emailContent, sessionId: getSessionId() }),
       });
 
       const data = await res.json();
