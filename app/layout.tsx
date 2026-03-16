@@ -21,6 +21,9 @@ export default function RootLayout({
         <ToastProvider>
           <Navbar />
           <main className="min-h-[calc(100dvh-56px)]">{children}</main>
+          <footer className="border-t border-[#1c2028] py-5 text-center text-[13px] text-[#475569]">
+            Built by <span className="text-[#94a3b8] font-medium">Abrar Tajwar Khan</span>
+          </footer>
         </ToastProvider>
       </body>
     </html>
