@@ -40,7 +40,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {/* Toast container */}
       <div
         aria-live="polite"
-        className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"
+        className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 items-center pointer-events-none"
       >
         {toasts.map((t) => (
           <ToastItem key={t.id} item={t} />
@@ -58,7 +58,7 @@ function ToastItem({ item }: { item: ToastItem }) {
     if (el) {
       el.animate(
         [
-          { opacity: 0, transform: "translateY(8px)" },
+          { opacity: 0, transform: "translateY(-8px)" },
           { opacity: 1, transform: "translateY(0)" },
         ],
         { duration: 200, fill: "forwards" }
