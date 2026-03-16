@@ -10,6 +10,8 @@ const PAGE_SIZE = 10;
 interface LeadTableProps {
   leads: Lead[];
   onLeadClick: (lead: Lead) => void;
+  hasFilters?: boolean;
+  onClearFilters?: () => void;
 }
 
 function relativeTime(iso: string): string {
@@ -44,7 +46,7 @@ function scoreColor(score: number) {
   return { bg: "bg-[#ef4444]/10", text: "text-[#ef4444]", border: "border-[#ef4444]/25" };
 }
 
-export function LeadTable({ leads, onLeadClick }: LeadTableProps) {
+export function LeadTable({ leads, onLeadClick, hasFilters, onClearFilters }: LeadTableProps) {
   const [page, setPage] = useState(1);
   const totalPages = Math.ceil(leads.length / PAGE_SIZE);
   const pageLeads = leads.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -56,6 +58,27 @@ export function LeadTable({ leads, onLeadClick }: LeadTableProps) {
   }
 
   if (leads.length === 0) {
+    if (hasFilters) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center rounded-xl border border-dashed border-[#252a35]">
+          <div className="w-12 h-12 rounded-full bg-[#1c2028] border border-[#252a35] flex items-center justify-center text-xl">
+            🔍
+          </div>
+          <div>
+            <p className="text-[#e2e8f0] font-medium mb-1">No leads match your filters</p>
+            <p className="text-sm text-[#475569]">Try adjusting your tier, date range, or search term.</p>
+          </div>
+          {onClearFilters && (
+            <button
+              onClick={onClearFilters}
+              className="px-4 py-2 rounded-lg text-sm font-medium border border-[#252a35] bg-[#1c2028] text-[#94a3b8] hover:text-[#e2e8f0] hover:border-[#363d4d] transition-colors"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 text-center rounded-xl border border-dashed border-[#252a35]">
         <div className="w-12 h-12 rounded-full bg-[#1c2028] border border-[#252a35] flex items-center justify-center text-xl">

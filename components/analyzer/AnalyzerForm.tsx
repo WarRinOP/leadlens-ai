@@ -25,16 +25,18 @@ James`;
 
 interface AnalyzerFormProps {
   onResult: (result: AnalysisResult) => void;
+  onError?: (message: string) => void;
+  onLoading?: () => void;
 }
 
-export function AnalyzerForm({ onResult }: AnalyzerFormProps) {
+export function AnalyzerForm({ onResult, onError, onLoading }: AnalyzerFormProps) {
   const { toast } = useToast();
 
   const [businessType, setBusinessType] = useState("Marketing Agency");
   const [brandName, setBrandName] = useState("");
   const [emailContent, setEmailContent] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Load saved settings from API on mount
   useEffect(() => {
@@ -70,18 +72,19 @@ export function AnalyzerForm({ onResult }: AnalyzerFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setValidationError(null);
 
     if (!emailContent.trim()) {
-      setError("Please paste a lead email before analyzing.");
+      setValidationError("Please paste a lead email before analyzing.");
       return;
     }
     if (!brandName.trim()) {
-      setError("Please enter your brand name.");
+      setValidationError("Please enter your brand name.");
       return;
     }
 
     setLoading(true);
+    onLoading?.();
 
     // Save settings in background
     saveSettings();
@@ -116,7 +119,8 @@ export function AnalyzerForm({ onResult }: AnalyzerFormProps) {
       toast("Lead analyzed and saved!", "success");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong.";
-      setError(msg);
+      // Surface to parent for full error card display
+      onError?.(msg);
       toast(msg, "error");
     } finally {
       setLoading(false);
@@ -125,7 +129,7 @@ export function AnalyzerForm({ onResult }: AnalyzerFormProps) {
 
   function loadSample() {
     setEmailContent(SAMPLE_LEAD);
-    setError(null);
+    setValidationError(null);
   }
 
   return (
@@ -204,19 +208,19 @@ export function AnalyzerForm({ onResult }: AnalyzerFormProps) {
           disabled={loading}
           rows={8}
           className="w-full px-3 py-3 rounded-lg bg-[#13161c] border border-[#252a35] text-sm text-[#e2e8f0] placeholder:text-[#475569] resize-y transition-colors hover:border-[#363d4d] focus:outline-none focus:border-[#3b82f6] disabled:opacity-50 leading-relaxed"
-          style={{ minHeight: "180px" }}
+          style={{ minHeight: "140px" }}
         />
       </div>
 
-      {/* Error message */}
-      {error && (
+      {/* Error message — validation only (API errors go to parent error card) */}
+      {validationError && (
         <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[#ef4444]/10 border border-[#ef4444]/30 text-sm text-[#ef4444]">
           <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <span>{error}</span>
+          <span>{validationError}</span>
         </div>
       )}
 

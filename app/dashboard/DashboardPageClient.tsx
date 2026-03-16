@@ -12,15 +12,15 @@ export default function DashboardPageClient() {
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<FilterState>({
-    tier: "All",
-    period: "all",
-    search: "",
-  });
+  const [fetchError, setFetchError] = useState(false);
+  const [filterKey, setFilterKey] = useState(0);
+  const defaultFilters: FilterState = { tier: "All", period: "all", search: "" };
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
 
   // ── Fetch leads from API ──────────────────────────────────────────────────
   const fetchLeads = useCallback(async (f: FilterState) => {
     setLoading(true);
+    setFetchError(false);
     try {
       const params = new URLSearchParams();
       if (f.tier !== "All") params.set("tier", f.tier);
@@ -28,15 +28,14 @@ export default function DashboardPageClient() {
       if (f.search.trim()) params.set("search", f.search.trim());
       const url = `/api/leads${params.toString() ? `?${params}` : ""}`;
       const res = await fetch(url);
+      if (!res.ok) throw new Error("Fetch failed");
       const { leads } = await res.json();
       setFilteredLeads(leads ?? []);
-
-      // Always keep the unfiltered list for stats
       if (f.tier === "All" && f.period === "all" && !f.search) {
         setAllLeads(leads ?? []);
       }
     } catch {
-      // keep previous state silently
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -57,6 +56,16 @@ export default function DashboardPageClient() {
     setAllLeads((prev) => prev.filter((l) => l.id !== id));
     setFilteredLeads((prev) => prev.filter((l) => l.id !== id));
   }
+
+  // Clear all filters
+  function clearFilters() {
+    setFilters(defaultFilters);
+    setFilterKey((k) => k + 1);
+    fetchLeads(defaultFilters);
+  }
+
+  const isFiltered =
+    filters.tier !== "All" || filters.period !== "all" || filters.search !== "";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -83,25 +92,48 @@ export default function DashboardPageClient() {
       {/* ── Filter bar ──────────────────────────────────────────────── */}
       <div className="mb-4">
         <FilterBar
+          key={filterKey}
           onChange={handleFilterChange}
           resultCount={filteredLeads.length}
         />
       </div>
 
-      {/* ── Lead table ──────────────────────────────────────────────── */}
+      {/* ── Lead table + states ──────────────────────────────────── */}
       {loading ? (
-        <div className="flex flex-col gap-2">
-          {[...Array(5)].map((_, i) => (
+        <div className="rounded-xl border border-[#252a35] overflow-hidden">
+          <div className="h-10 bg-[#13161c] border-b border-[#252a35] animate-pulse" />
+          {[...Array(8)].map((_, i) => (
             <div
               key={i}
-              className="h-12 rounded-xl bg-[#13161c] border border-[#252a35] animate-pulse"
+              className="h-12 bg-[#13161c] border-b border-[#252a35] last:border-0 animate-pulse"
+              style={{ animationDelay: `${i * 60}ms` }}
             />
           ))}
+        </div>
+      ) : fetchError ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center rounded-xl border border-[#ef4444]/20 bg-[#ef4444]/5">
+          <div className="w-12 h-12 rounded-full bg-[#ef4444]/10 border border-[#ef4444]/20 flex items-center justify-center">
+            <svg className="w-5 h-5 text-[#ef4444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-[#e2e8f0] font-medium mb-1">Could not load leads</p>
+            <p className="text-sm text-[#475569]">Check your connection and try again.</p>
+          </div>
+          <button
+            onClick={() => fetchLeads(filters)}
+            className="px-4 py-2 rounded-lg text-sm font-medium border border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444]/20 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       ) : (
         <LeadTable
           leads={filteredLeads}
           onLeadClick={(lead) => setSelectedLead(lead)}
+          hasFilters={isFiltered}
+          onClearFilters={clearFilters}
         />
       )}
 
