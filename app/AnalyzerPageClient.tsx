@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AnalyzerForm } from "@/components/analyzer/AnalyzerForm";
 import { ResultsPanel, type AnalysisResult } from "@/components/analyzer/ResultsPanel";
 import { Card } from "@/components/ui/Card";
+import { getStoredRemaining } from "@/lib/session";
 
 // ── Results area skeleton ─────────────────────────────────────────────────────
 function ResultsSkeleton() {
@@ -94,7 +95,7 @@ type PageState =
 
 export default function AnalyzerPageClient() {
   const [pageState, setPageState] = useState<PageState>({ status: "idle" });
-  const [remaining, setRemaining] = useState<number>(5);
+  const [remaining, setRemaining] = useState<number>(() => getStoredRemaining());
 
   function handleResult(result: AnalysisResult) {
     setPageState({ status: "success", result });

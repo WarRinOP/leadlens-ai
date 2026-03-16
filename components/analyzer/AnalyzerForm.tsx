@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { getSessionId } from "@/lib/session";
+import { getSessionId, setStoredRemaining } from "@/lib/session";
 import type { AnalysisResult } from "./ResultsPanel";
 
 const BUSINESS_TYPES = [
@@ -122,6 +122,7 @@ export function AnalyzerForm({ onResult, onError, onLoading, onRemaining }: Anal
       // Propagate remaining count to parent for live badge update
       const remaining = data.remaining as number;
       onRemaining?.(remaining);
+      setStoredRemaining(remaining); // persist across page refreshes
 
       // Show remaining count toast
       if (remaining === 0) {
