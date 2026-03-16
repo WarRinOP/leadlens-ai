@@ -117,7 +117,16 @@ export function AnalyzerForm({ onResult, onError, onLoading }: AnalyzerFormProps
       };
 
       onResult(result);
-      toast("Lead analyzed and saved!", "success");
+
+      // Show remaining count
+      const remaining = data.remaining as number;
+      if (remaining === 0) {
+        toast("Analysis complete — that was your last free analysis", "info");
+      } else if (remaining === 1) {
+        toast(`Analysis saved! 1 free analysis remaining`, "success");
+      } else {
+        toast(`Analysis saved! ${remaining} free analyses remaining`, "success");
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong.";
       // Surface to parent for full error card display

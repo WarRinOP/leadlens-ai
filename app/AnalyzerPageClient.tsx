@@ -115,10 +115,13 @@ export default function AnalyzerPageClient() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       {/* ── Page header ─────────────────────────────────────────────── */}
       <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#3b82f6]/10 border border-[#3b82f6]/20 text-[#3b82f6] text-[11px] font-semibold uppercase tracking-wider">
             <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] animate-pulse" />
             AI-Powered
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/20 text-[#22c55e] text-[11px] font-semibold uppercase tracking-wider">
+            5 Free Analyses
           </span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#e2e8f0] tracking-tight">
@@ -126,7 +129,7 @@ export default function AnalyzerPageClient() {
         </h1>
         <p className="text-[#94a3b8] mt-1.5 max-w-xl">
           Paste an inbound lead email. Get a score, a reply, and next
-          steps — powered by Claude.
+          steps — powered by Claude. Each session includes 5 complimentary analyses.
         </p>
       </div>
 
