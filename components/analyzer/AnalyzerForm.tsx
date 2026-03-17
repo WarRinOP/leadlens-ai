@@ -29,9 +29,10 @@ interface AnalyzerFormProps {
   onError?: (message: string) => void;
   onLoading?: () => void;
   onRemaining?: (count: number) => void;
+  simBlock?: boolean;
 }
 
-export function AnalyzerForm({ onResult, onError, onLoading, onRemaining }: AnalyzerFormProps) {
+export function AnalyzerForm({ onResult, onError, onLoading, onRemaining, simBlock }: AnalyzerFormProps) {
   const { toast } = useToast();
 
   const [businessType, setBusinessType] = useState("Marketing Agency");
@@ -95,6 +96,7 @@ export function AnalyzerForm({ onResult, onError, onLoading, onRemaining }: Anal
       const adminKey = getAdminKey();
       const reqHeaders: Record<string, string> = { "Content-Type": "application/json" };
       if (adminKey) reqHeaders["x-admin-key"] = adminKey;
+      if (simBlock) reqHeaders["x-simulate-block"] = "true";
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: reqHeaders,

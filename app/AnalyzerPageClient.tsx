@@ -101,6 +101,7 @@ export default function AnalyzerPageClient() {
   const [adminCode, setAdminCode] = useState("");
   const [adminError, setAdminError] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
+  const [simBlock, setSimBlock] = useState(false);
 
   function handleResult(result: AnalysisResult) {
     setPageState({ status: "success", result });
@@ -160,7 +161,11 @@ export default function AnalyzerPageClient() {
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/20 text-[#22c55e] text-[11px] font-semibold uppercase tracking-wider">
             5 Free Analyses
           </span>
-          {remaining === 0 ? (
+          {simBlock ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#fbbf24]/10 border border-[#fbbf24]/20 text-[#fbbf24] text-[11px] font-semibold uppercase tracking-wider">
+              ⚠ Simulating Block
+            </span>
+          ) : remaining === 0 ? (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f59e0b]/10 border border-[#f59e0b]/20 text-[#f59e0b] text-[11px] font-semibold uppercase tracking-wider">
               Limit Reached — Contact for More
             </span>
@@ -192,6 +197,7 @@ export default function AnalyzerPageClient() {
               onError={handleError}
               onLoading={handleLoading}
               onRemaining={handleRemaining}
+              simBlock={simBlock}
             />
           </Card>
 
@@ -255,12 +261,21 @@ export default function AnalyzerPageClient() {
     {/* Footer admin button */}
     <div style={{ textAlign: "center", padding: "8px 0 20px", fontSize: "11px" }}>
       {admin ? (
-        <button
-          onClick={() => { clearAdminKey(); setAdmin(false); setRemaining(getStoredRemaining()); }}
-          style={{ background: "none", border: "none", color: "#22c55e", cursor: "pointer", fontSize: "10px" }}
-        >
-          ✓ Admin active — click to disable
-        </button>
+        <>
+          <button
+            onClick={() => { clearAdminKey(); setAdmin(false); setSimBlock(false); setRemaining(getStoredRemaining()); }}
+            style={{ background: "none", border: "none", color: "#22c55e", cursor: "pointer", fontSize: "10px" }}
+          >
+            ✓ Admin active — click to disable
+          </button>
+          <span style={{ color: "#252a35", fontSize: "10px", margin: "0 4px" }}>|</span>
+          <button
+            onClick={() => setSimBlock(s => !s)}
+            style={{ background: "none", border: "none", fontSize: "10px", cursor: "pointer", color: simBlock ? "#fbbf24" : "#4b5675" }}
+          >
+            {simBlock ? '⚠ Block ON — click to unlock' : '🔒 Simulate IP Block'}
+          </button>
+        </>
       ) : (
         <button
           onClick={() => setShowAdminInput(true)}

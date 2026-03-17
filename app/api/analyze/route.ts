@@ -59,6 +59,17 @@ export async function POST(req: NextRequest) {
   const adminKey = req.headers.get("x-admin-key") || "";
   const isAdmin = adminKey && adminKey === process.env.ADMIN_SECRET;
 
+  // Simulate block mode — must check BEFORE admin bypass
+  if (req.headers.get("x-simulate-block") === "true" && adminKey === process.env.ADMIN_SECRET) {
+    return NextResponse.json(
+      {
+        error: `You've used all ${MAX_ANALYSES} free analyses. This is a portfolio demo — reach out on Fiverr for unlimited access!`,
+        code: "RATE_LIMIT",
+      },
+      { status: 429 }
+    );
+  }
+
   // Upsert session row
   const { data: session } = await supabase
     .from("ll_sessions")
