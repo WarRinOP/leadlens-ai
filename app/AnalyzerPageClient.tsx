@@ -101,7 +101,7 @@ export default function AnalyzerPageClient() {
   const [adminCode, setAdminCode] = useState("");
   const [adminError, setAdminError] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
-  const [simBlock, setSimBlock] = useState(false);
+  const [exhaustedTest, setExhaustedTest] = useState(false); // "Check Block" mode
 
   function handleResult(result: AnalysisResult) {
     setPageState({ status: "success", result });
@@ -116,7 +116,8 @@ export default function AnalyzerPageClient() {
   }
 
   function handleRemaining(count: number) {
-    setRemaining(admin ? 999 : count);
+    // In check-block mode we want the real remaining count from the server
+    setRemaining(exhaustedTest ? count : (admin ? 999 : count));
   }
 
   function reset() {
@@ -148,6 +149,24 @@ export default function AnalyzerPageClient() {
     }
   }
 
+  async function exhaustSession(action: 'exhaust' | 'reset' = 'exhaust') {
+    const sid = typeof window !== 'undefined' ? (localStorage.getItem('ll_session_id') || '') : '';
+    const res = await fetch('/api/admin/exhaust-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
+      body: JSON.stringify({ session_id: sid, action }),
+    });
+    if (res.ok) {
+      if (action === 'exhaust') {
+        setExhaustedTest(true);
+        setRemaining(0);
+      } else {
+        setExhaustedTest(false);
+        setRemaining(999);
+      }
+    }
+  }
+
   return (
     <>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -161,9 +180,9 @@ export default function AnalyzerPageClient() {
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/20 text-[#22c55e] text-[11px] font-semibold uppercase tracking-wider">
             5 Free Analyses
           </span>
-          {simBlock ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#fbbf24]/10 border border-[#fbbf24]/20 text-[#fbbf24] text-[11px] font-semibold uppercase tracking-wider">
-              ⚠ Simulating Block
+          {exhaustedTest ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f59e0b]/10 border border-[#f59e0b]/20 text-[#f59e0b] text-[11px] font-semibold uppercase tracking-wider">
+              🔒 Check Block ON
             </span>
           ) : remaining === 0 ? (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f59e0b]/10 border border-[#f59e0b]/20 text-[#f59e0b] text-[11px] font-semibold uppercase tracking-wider">
@@ -197,7 +216,7 @@ export default function AnalyzerPageClient() {
               onError={handleError}
               onLoading={handleLoading}
               onRemaining={handleRemaining}
-              simBlock={simBlock}
+              exhaustedTest={exhaustedTest}
             />
           </Card>
 
@@ -263,17 +282,24 @@ export default function AnalyzerPageClient() {
       {admin ? (
         <>
           <button
-            onClick={() => { clearAdminKey(); setAdmin(false); setSimBlock(false); setRemaining(getStoredRemaining()); }}
+            onClick={() => { clearAdminKey(); setAdmin(false); setExhaustedTest(false); setRemaining(getStoredRemaining()); }}
             style={{ background: "none", border: "none", color: "#22c55e", cursor: "pointer", fontSize: "10px" }}
           >
-            ✓ Admin active — click to disable
+            ✓ Admin active — disable
           </button>
-          <span style={{ color: "#252a35", fontSize: "10px", margin: "0 4px" }}>|</span>
+          <span style={{ color: "#252a35", fontSize: "10px", margin: "0 6px" }}>|</span>
           <button
-            onClick={() => setSimBlock(s => !s)}
-            style={{ background: "none", border: "none", fontSize: "10px", cursor: "pointer", color: simBlock ? "#fbbf24" : "#4b5675" }}
+            onClick={() => exhaustedTest ? exhaustSession('reset') : undefined}
+            style={{ background: "none", border: "none", fontSize: "10px", cursor: exhaustedTest ? "pointer" : "default", fontWeight: exhaustedTest ? 400 : 700, color: exhaustedTest ? "#4b5675" : "#22c55e", textDecoration: exhaustedTest ? "none" : "underline" }}
           >
-            {simBlock ? '⚠ Block ON — click to unlock' : '🔒 Simulate IP Block'}
+            🔓 Unlimited Testing
+          </button>
+          <span style={{ color: "#252a35", fontSize: "10px", margin: "0 4px" }}>/</span>
+          <button
+            onClick={() => !exhaustedTest ? exhaustSession('exhaust') : undefined}
+            style={{ background: "none", border: "none", fontSize: "10px", cursor: !exhaustedTest ? "pointer" : "default", fontWeight: !exhaustedTest ? 400 : 700, color: !exhaustedTest ? "#4b5675" : "#f59e0b", textDecoration: !exhaustedTest ? "none" : "underline" }}
+          >
+            🔒 Check Block
           </button>
         </>
       ) : (
