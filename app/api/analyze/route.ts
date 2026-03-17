@@ -55,6 +55,10 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-real-ip") ||
     "unknown";
 
+  // Admin bypass
+  const adminKey = req.headers.get("x-admin-key") || "";
+  const isAdmin = adminKey && adminKey === process.env.ADMIN_SECRET;
+
   // Upsert session row
   const { data: session } = await supabase
     .from("ll_sessions")
@@ -67,7 +71,7 @@ export async function POST(req: NextRequest) {
 
   const currentCount = session?.usage_count ?? 0;
 
-  if (currentCount >= MAX_ANALYSES) {
+  if (!isAdmin && currentCount >= MAX_ANALYSES) {
     return NextResponse.json(
       {
         error: `You've used all ${MAX_ANALYSES} free analyses. This is a portfolio demo — reach out on Fiverr for unlimited access!`,
@@ -84,7 +88,7 @@ export async function POST(req: NextRequest) {
     .eq("ip_address", clientIp);
 
   // Sum all usage for this IP
-  if (ipCount !== null) {
+  if (!isAdmin && ipCount !== null) {
     const { data: ipSessions } = await supabase
       .from("ll_sessions")
       .select("usage_count")
@@ -181,7 +185,7 @@ export async function POST(req: NextRequest) {
 
   // ── 7. Return full record ─────────────────────────────────────────────────
   return NextResponse.json(
-    { lead, analysis, remaining: MAX_ANALYSES - currentCount - 1 },
+    { lead, analysis, remaining: isAdmin ? 999 : MAX_ANALYSES - currentCount - 1 },
     { status: 200 }
   );
 }

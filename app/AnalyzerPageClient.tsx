@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AnalyzerForm } from "@/components/analyzer/AnalyzerForm";
 import { ResultsPanel, type AnalysisResult } from "@/components/analyzer/ResultsPanel";
 import { Card } from "@/components/ui/Card";
-import { getStoredRemaining } from "@/lib/session";
+import { getStoredRemaining, getAdminKey, setAdminKey, clearAdminKey, isAdminMode } from "@/lib/session";
 
 // ── Results area skeleton ─────────────────────────────────────────────────────
 function ResultsSkeleton() {
@@ -96,6 +96,11 @@ type PageState =
 export default function AnalyzerPageClient() {
   const [pageState, setPageState] = useState<PageState>({ status: "idle" });
   const [remaining, setRemaining] = useState<number>(() => getStoredRemaining());
+  const [admin, setAdmin] = useState(() => isAdminMode());
+  const [showAdminInput, setShowAdminInput] = useState(false);
+  const [adminCode, setAdminCode] = useState("");
+  const [adminError, setAdminError] = useState("");
+  const [adminLoading, setAdminLoading] = useState(false);
 
   function handleResult(result: AnalysisResult) {
     setPageState({ status: "success", result });
@@ -110,14 +115,40 @@ export default function AnalyzerPageClient() {
   }
 
   function handleRemaining(count: number) {
-    setRemaining(count);
+    setRemaining(admin ? 999 : count);
   }
 
   function reset() {
     setPageState({ status: "idle" });
   }
 
+  async function verifyAdmin() {
+    setAdminLoading(true);
+    try {
+      const res = await fetch("/api/admin-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: adminCode }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAdminKey(adminCode);
+        setAdmin(true);
+        setRemaining(999);
+        setShowAdminInput(false);
+        setAdminCode("");
+      } else {
+        setAdminError("Invalid code");
+      }
+    } catch {
+      setAdminError("Verification failed");
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
   return (
+    <>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       {/* ── Page header ─────────────────────────────────────────────── */}
       <div className="mb-8">
@@ -220,5 +251,60 @@ export default function AnalyzerPageClient() {
         </div>
       </div>
     </div>
+
+    {/* Footer admin button */}
+    <div style={{ textAlign: "center", padding: "8px 0 20px", fontSize: "11px" }}>
+      {admin ? (
+        <button
+          onClick={() => { clearAdminKey(); setAdmin(false); setRemaining(getStoredRemaining()); }}
+          style={{ background: "none", border: "none", color: "#22c55e", cursor: "pointer", fontSize: "10px" }}
+        >
+          ✓ Admin active — click to disable
+        </button>
+      ) : (
+        <button
+          onClick={() => setShowAdminInput(true)}
+          style={{ background: "none", border: "none", color: "#252a35", cursor: "pointer", fontSize: "10px" }}
+        >
+          Admin
+        </button>
+      )}
+    </div>
+
+    {/* Admin modal */}
+    {showAdminInput && (
+      <div
+        style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
+        onClick={() => { setShowAdminInput(false); setAdminError(""); setAdminCode(""); }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{ background: "#13161c", border: "1px solid #252a35", borderRadius: "14px", padding: "24px", maxWidth: "380px", width: "100%" }}
+        >
+          <p style={{ fontSize: "14px", fontWeight: 600, color: "#e2e8f0", marginBottom: "6px" }}>Are you the developer?</p>
+          <p style={{ fontSize: "12px", color: "#475569", marginBottom: "16px" }}>Enter the secret code you set for unlimited testing.</p>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <input
+              type="password"
+              value={adminCode}
+              onChange={(e) => { setAdminCode(e.target.value); setAdminError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") verifyAdmin(); }}
+              placeholder="Secret code"
+              autoFocus
+              style={{ flex: 1, padding: "10px 14px", background: "#1c2028", border: "1px solid #252a35", borderRadius: "8px", color: "#e2e8f0", fontSize: "13px" }}
+            />
+            <button
+              onClick={verifyAdmin}
+              disabled={!adminCode.trim() || adminLoading}
+              style={{ padding: "10px 18px", background: "#818cf8", border: "none", borderRadius: "8px", color: "#0f1117", fontWeight: 600, cursor: "pointer", fontSize: "13px", opacity: (!adminCode.trim() || adminLoading) ? 0.5 : 1 }}
+            >
+              {adminLoading ? "..." : "Verify"}
+            </button>
+          </div>
+          {adminError && <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "8px" }}>{adminError}</p>}
+        </div>
+      </div>
+    )}
+  </>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { getSessionId, setStoredRemaining } from "@/lib/session";
+import { getSessionId, setStoredRemaining, getAdminKey } from "@/lib/session";
 import type { AnalysisResult } from "./ResultsPanel";
 
 const BUSINESS_TYPES = [
@@ -92,9 +92,12 @@ export function AnalyzerForm({ onResult, onError, onLoading, onRemaining }: Anal
     saveSettings();
 
     try {
+      const adminKey = getAdminKey();
+      const reqHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (adminKey) reqHeaders["x-admin-key"] = adminKey;
       const res = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: reqHeaders,
         body: JSON.stringify({ businessType, brandName, emailContent, sessionId: getSessionId() }),
       });
 
