@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeLeadEmail } from "@/lib/claude";
 import { createServerSupabaseClient } from "@/lib/supabase";
+import { reserveQuota, GuardConfig } from "@/lib/usage-guard";
 
 const MAX_ANALYSES = 5;
+const MAX_EMAIL_CHARS = 5000;
+const GUARD: GuardConfig = { prefix: "ll", limit: MAX_ANALYSES, noun: "analyses" };
 
 export async function POST(req: NextRequest) {
   // ── 1. Parse + Validate ───────────────────────────────────────────────────
@@ -48,76 +51,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── 2. Rate limiting — check session + IP ─────────────────────────────────
+  if (
+    businessType.length > 100 ||
+    brandName.length > 100 ||
+    emailContent.length > MAX_EMAIL_CHARS
+  ) {
+    return NextResponse.json({ error: "Input is too long" }, { status: 400 });
+  }
+
+  // ── 2. Usage limit: atomic, per device and per network address ───────────
   const supabase = createServerSupabaseClient();
-  const clientIp =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
-
-  // Admin bypass
-  const adminKey = req.headers.get("x-admin-key") || "";
-  const isAdmin = adminKey && adminKey === process.env.ADMIN_SECRET;
-
-  // Simulate block mode — must check BEFORE admin bypass
-  if (req.headers.get("x-simulate-block") === "true" && adminKey === process.env.ADMIN_SECRET) {
-    return NextResponse.json(
-      {
-        error: `You've used all ${MAX_ANALYSES} free analyses. This is a portfolio demo — reach out on Fiverr for unlimited access!`,
-        code: "RATE_LIMIT",
-      },
-      { status: 429 }
-    );
-  }
-
-  // Upsert session row
-  const { data: session } = await supabase
-    .from("ll_sessions")
-    .upsert(
-      { session_id: sessionId.trim(), ip_address: clientIp },
-      { onConflict: "session_id" }
-    )
-    .select()
-    .single();
-
-  const currentCount = session?.usage_count ?? 0;
-
-  if (!isAdmin && currentCount >= MAX_ANALYSES) {
-    return NextResponse.json(
-      {
-        error: `You've used all ${MAX_ANALYSES} free analyses. This is a portfolio demo — reach out on Fiverr for unlimited access!`,
-        code: "RATE_LIMIT",
-      },
-      { status: 429 }
-    );
-  }
-
-  // Also check IP across all sessions (secondary limit)
-  const { count: ipCount } = await supabase
-    .from("ll_sessions")
-    .select("usage_count", { count: "exact", head: false })
-    .eq("ip_address", clientIp);
-
-  // Sum all usage for this IP
-  if (!isAdmin && ipCount !== null) {
-    const { data: ipSessions } = await supabase
-      .from("ll_sessions")
-      .select("usage_count")
-      .eq("ip_address", clientIp);
-
-    const totalIpUsage =
-      ipSessions?.reduce((sum, s) => sum + (s.usage_count ?? 0), 0) ?? 0;
-
-    if (totalIpUsage >= MAX_ANALYSES) {
-      return NextResponse.json(
-        {
-          error: `You've used all ${MAX_ANALYSES} free analyses. This is a portfolio demo — reach out on Fiverr for unlimited access!`,
-          code: "RATE_LIMIT",
-        },
-        { status: 429 }
-      );
-    }
-  }
+  const reservation = await reserveQuota(req, supabase, GUARD);
+  if (!reservation.ok) return reservation.response;
 
   // ── 3. Call Claude ────────────────────────────────────────────────────────
   let analysis;
@@ -129,13 +74,14 @@ export async function POST(req: NextRequest) {
     );
   } catch (err) {
     console.error("[analyze] Claude error:", err);
-    return NextResponse.json(
+    await reservation.refund();
+    return reservation.respond(NextResponse.json(
       {
         error: "Failed to analyze lead with Claude",
         details: err instanceof Error ? err.message : "Unknown error",
       },
       { status: 500 }
-    );
+    ));
   }
 
   // ── 4. Validate Claude response shape ────────────────────────────────────
@@ -188,15 +134,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── 6. Increment usage count ──────────────────────────────────────────────
-  await supabase
-    .from("ll_sessions")
-    .update({ usage_count: currentCount + 1 })
-    .eq("session_id", sessionId.trim());
-
   // ── 7. Return full record ─────────────────────────────────────────────────
-  return NextResponse.json(
-    { lead, analysis, remaining: isAdmin ? 999 : MAX_ANALYSES - currentCount - 1 },
+  return reservation.respond(NextResponse.json(
+    { lead, analysis, remaining: reservation.remaining },
     { status: 200 }
-  );
+  ));
 }
