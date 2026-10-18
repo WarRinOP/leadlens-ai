@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { HowItWorksModal } from "@/components/HowItWorksModal";
 
 export function Navbar() {
@@ -14,10 +13,13 @@ export function Navbar() {
 
   useEffect(() => {
     async function fetchCount() {
-      const { count } = await supabase
-        .from("ll_leads")
-        .select("*", { count: "exact", head: true });
-      setTotalLeads(count ?? 0);
+      try {
+        const res = await fetch("/api/leads/count");
+        const data = await res.json();
+        setTotalLeads(typeof data.count === "number" ? data.count : 0);
+      } catch {
+        setTotalLeads(0);
+      }
     }
     fetchCount();
   }, []);
